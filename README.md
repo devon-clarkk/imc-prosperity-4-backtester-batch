@@ -50,28 +50,28 @@ The backtester relies on a specific set of data models to process market informa
 
   **Price Data:**
   
-* ![Price Data](images/price_data.png)
+  ![Price Data](images/price_data.png)
 
   **Trade Data:**
   
-* ![Trade Data](images/trade_data.png)
+  ![Trade Data](images/trade_data.png)
 
   This raw data is then structured and filled into the `BacktestData` model, which acts as the data source for the simulation:
 
   **Backtest Data:**
   
-* ![Backtest Data](images/back_test_data.png)
+  ![Backtest Data](images/back_test_data.png)
 
-* **Result Data Models (`models/input.py`)**: Models defined here are also responsible for capturing the test result data generated during the simulation. 
+* **Result Data Models (`models/output.py`)**: Models defined here are responsible for capturing the test result data generated during the simulation. 
   
   Once the backtest is complete, the system compiles the findings into a `BacktestResult` object:
 
   **Backtest Result:**
   
-* ![Backtest Result](images/result_final_stage.png)
+  ![Backtest Result](images/result_final_stage.png)
 
   Finally, this structured result data is written directly into the standard output log file so you can review your algorithm's performance and activities:
 
   **Output Log File:**
   
-* ![Output Log File](images/out_put_log_file.png)
+  ![Output Log File](images/out_put_log_file.png)
