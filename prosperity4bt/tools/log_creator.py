@@ -1,6 +1,6 @@
-from src.datamodel import TradingState
-from src.models.output import ActivityLogRow
-from src.models.input import BacktestData
+from prosperity4bt.datamodel import TradingState
+from prosperity4bt.models.output import ActivityLogRow
+from prosperity4bt.models.input import BacktestData
 
 
 class ActivityLogCreator:

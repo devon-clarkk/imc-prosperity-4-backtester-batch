@@ -2,15 +2,15 @@ from contextlib import closing, redirect_stdout
 from io import StringIO
 from IPython.utils.io import Tee
 from tqdm import tqdm
-from src.constants import LIMITS
-from src.models.test_options import TradeMatchingMode
-from src.tools.data_reader import BackDataReader
-from src.datamodel import TradingState, Observation, Symbol, Order, OrderDepth, Listing, ConversionObservation
-from src.tools.log_creator import ActivityLogCreator
-from src.models.input import BacktestData
-from src.models.output import BacktestResult
-from src.models.output import SandboxLogRow
-from src.tools.order_match_maker import OrderMatchMaker
+from prosperity4bt.constants import LIMITS
+from prosperity4bt.models.test_options import TradeMatchingMode
+from prosperity4bt.tools.data_reader import BackDataReader
+from prosperity4bt.datamodel import TradingState, Observation, Symbol, Order, OrderDepth, Listing, ConversionObservation
+from prosperity4bt.tools.log_creator import ActivityLogCreator
+from prosperity4bt.models.input import BacktestData
+from prosperity4bt.models.output import BacktestResult
+from prosperity4bt.models.output import SandboxLogRow
+from prosperity4bt.tools.order_match_maker import OrderMatchMaker
 
 
 class TestRunner:

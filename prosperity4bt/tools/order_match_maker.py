@@ -1,7 +1,7 @@
-from src.datamodel import TradingState, Order, Symbol, Trade
-from src.models.input import BacktestData, MarketTrade
-from src.models.output import TradeRow
-from src.models.test_options import TradeMatchingMode
+from prosperity4bt.datamodel import TradingState, Order, Symbol, Trade
+from prosperity4bt.models.input import BacktestData, MarketTrade
+from prosperity4bt.models.output import TradeRow
+from prosperity4bt.models.test_options import TradeMatchingMode
 
 
 # Match orders that're returned from the trading algorithm to prices in BacktestData

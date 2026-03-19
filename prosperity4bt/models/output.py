@@ -3,7 +3,7 @@ import uuid
 import orjson
 from typing import Any
 from dataclasses import dataclass
-from src.datamodel import Trade
+from prosperity4bt.datamodel import Trade
 
 
 @dataclass

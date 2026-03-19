@@ -1,4 +1,4 @@
-from src.models.output import BacktestResult
+from prosperity4bt.models.output import BacktestResult
 
 
 class SummaryPrinter:

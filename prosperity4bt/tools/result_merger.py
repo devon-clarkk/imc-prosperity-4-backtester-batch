@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import reduce
 
-from src.models.output import BacktestResult
+from prosperity4bt.models.output import BacktestResult
 
 # Merge a list of daily backtest results into one
 class ResultMerger:

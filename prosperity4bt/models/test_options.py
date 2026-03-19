@@ -1,6 +1,6 @@
 from pathlib import Path
 from enum import Enum
-from src.tools.data_reader import BackDataReader
+from prosperity4bt.tools.data_reader import BackDataReader
 
 
 class TradeMatchingMode(str, Enum):

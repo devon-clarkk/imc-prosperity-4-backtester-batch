@@ -3,8 +3,8 @@ from datetime import datetime
 from typer import Argument, Option, Typer
 from typing import Annotated, Optional
 from pathlib import Path
-from src.back_tester import BackTester
-from src.models.test_options import TestOptions, TradeMatchingMode
+from prosperity4bt.back_tester import BackTester
+from prosperity4bt.models.test_options import TestOptions, TradeMatchingMode
 
 app = Typer(context_settings={"help_option_names": ["--help", "-h"]})
 

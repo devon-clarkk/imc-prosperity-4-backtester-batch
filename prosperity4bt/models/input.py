@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.datamodel import Symbol, Trade
+from prosperity4bt.datamodel import Symbol, Trade
 
 
 @dataclass

@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from importlib import resources
 from pathlib import Path
 from typing import ContextManager, Optional
-from src.datamodel import Trade, Symbol
-from src.models.input import PriceRow, ObservationRow, BacktestData
+from prosperity4bt.datamodel import Trade, Symbol
+from prosperity4bt.models.input import PriceRow, ObservationRow, BacktestData
 
 
 
@@ -102,7 +102,7 @@ class BackDataReader:
 class PackageResourcesReader(BackDataReader):
     def _read_file_content(self, path_parts: list[str]) -> ContextManager[Optional[Path]]:
         try:
-            file_path = f"src.resources.{'.'.join(path_parts[:-1])}"
+            file_path = f"prosperity4bt.resources.{'.'.join(path_parts[:-1])}"
             container = resources.files(file_path)
             file = container / path_parts[-1]
             if not file.is_file():

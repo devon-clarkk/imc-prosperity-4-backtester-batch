@@ -9,6 +9,25 @@ This repository contains a Python-based backtester designed in preparation for t
 
 ---
 
+**Usage:**
+Basic usage:
+
+
+Install the latest version of the backtester
+```bash
+ $ pip install -U prosperity4bt
+ ```
+
+Run the backtester on an algorithm using all data from round 0
+```bash
+ $ prosperity4bt <path to algorithm file> 0
+ ```
+
+If you see: `No module named 'datamodel'`, set PYTHONPATH to the folder containing datamodel.py:  
+```bash
+ $env:PYTHONPATH="<path to>\imc-prosperity-4-backtester\prosperity4bt"
+```
+---
 ## Overall Structure & How It Works
 
 The architecture of the program is modularized to cleanly separate data loading, simulation execution, and order matching. Below is the structural diagram of the backtester:
