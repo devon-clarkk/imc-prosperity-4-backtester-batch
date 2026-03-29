@@ -19,12 +19,32 @@ class OrderMatchMaker:
         result = []
         market_trades = self.back_data.get_market_trades_at(self.state.timestamp)
 
-        # match orders
+        timestamp = self.state.timestamp
+
         for product in self.back_data.products:
             new_trades = []
-            for order in self.orders.get(product, []):
-                new_trade = self.__match_order(order, market_trades.get(product, []))
-                new_trades.extend(new_trade)
+            orders = self.orders.get(product, [])
+            for order in orders:
+                if order.quantity > 0:
+                    new_trade = self.__match_buy_order_from_price_depth(order)
+                else:
+                    new_trade = self.__match_sell_order_from_price_depth(order)
+                if len(new_trade) > 0:
+                    new_trades.extend(new_trade)
+
+            buy_order = [o for o in orders if o.quantity > 0]
+            for order in sorted(buy_order, key=lambda o: o.price, reverse=True):
+                new_trade = self.__match_buy_order_from_market_trades(order, market_trades.get(product, []))
+                if len(new_trade) > 0:
+                    new_trades.extend(new_trade)
+                    break
+
+            sell_order = [o for o in orders if o.quantity < 0]
+            for order in sorted(sell_order, key=lambda o: o.price):
+                new_trade = self.__match_sell_order_from_market_trades(order, market_trades.get(product, []))
+                if len(new_trade) > 0:
+                    new_trades.extend(new_trade)
+                    break
 
             if len(new_trades) > 0:
                 self.state.own_trades[product] = new_trades
@@ -46,42 +66,6 @@ class OrderMatchMaker:
 
         return result
 
-    def __match_order(self, order: Order, market_trades: list[MarketTrade]) -> list[Trade]:
-        if order.quantity > 0:
-            return self.__match_buy_order(order, market_trades)
-        elif order.quantity < 0:
-            return self.__match_sell_order(order, market_trades)
-        else:
-            return []
-
-    def __match_buy_order(self, order, market_trades) -> list[Trade]:
-        trades = []
-
-        # try match from sell_orders in order_depths
-        sell_orders = self.state.order_depths[order.symbol].sell_orders
-        price_matched = sorted(price for price in sell_orders.keys() if price <= order.price)
-        for price in price_matched:
-            volume = min(order.quantity, abs(sell_orders[price]))
-            self.__deduct_volume_from_order(sell_orders, price, volume)
-            trade = self.__create_buy_order(order, volume, price, "")
-            trades.append(trade)
-            if order.quantity == 0:
-                return trades
-
-        if self.trade_matching_mode == TradeMatchingMode.none:
-            return trades
-
-        # try match from market_trades
-        matched_market_trades = [trade for trade in market_trades if self.__can_match_buy_order(order, trade)]
-        for market_trade in matched_market_trades:
-            volume = min(order.quantity, market_trade.sell_quantity)
-            market_trade.sell_quantity -= volume
-            trade = self.__create_buy_order(order, volume, order.price, market_trade.trade.seller)
-            trades.append(trade)
-            if order.quantity == 0:
-                return trades
-
-        return trades
 
     def __create_buy_order(self, order: Order, volume: int, price: int, seller: str):
         self.state.position[order.symbol] = self.state.position.get(order.symbol, 0) + volume
@@ -97,35 +81,6 @@ class OrderMatchMaker:
         if market_trade.trade.price == order.price:
             return self.trade_matching_mode == TradeMatchingMode.all
         return True
-
-    def __match_sell_order(self, order, market_trades) -> list[Trade]:
-        trades = []
-
-        # try match from buy_orders in order_depths
-        buy_orders = self.state.order_depths[order.symbol].buy_orders
-        price_matches = sorted((price for price in buy_orders.keys() if price >= order.price), reverse=True)
-        for price in price_matches:
-            volume = min(abs(order.quantity), buy_orders[price])
-            self.__deduct_volume_from_order(buy_orders, price, volume)
-            trade = self.__create_sell_order(order, volume, price, "")
-            trades.append(trade)
-            if order.quantity == 0:
-                return trades
-
-        if self.trade_matching_mode == TradeMatchingMode.none:
-            return trades
-
-        # try match from market_trades
-        matched_market_trades = [trade for trade in market_trades if self.__can_match_sell_order(order, trade)]
-        for market_trade in matched_market_trades:
-            volume = min(abs(order.quantity), market_trade.buy_quantity)
-            market_trade.buy_quantity -= volume
-            trade = self.__create_sell_order(order, volume, order.price, market_trade.trade.buyer)
-            trades.append(trade)
-            if order.quantity == 0:
-                return trades
-
-        return trades
 
     def __create_sell_order(self, order: Order, volume: int, price: int, buyer: str):
         self.state.position[order.symbol] = self.state.position.get(order.symbol, 0) - volume
@@ -152,3 +107,62 @@ class OrderMatchMaker:
 
         if orders[price] == 0:
             orders.pop(price)
+
+
+    def __match_buy_order_from_price_depth(self, order: Order) -> list[Trade]:
+        trades = []
+        sell_price_depth = self.state.order_depths[order.symbol].sell_orders
+        price_matched = sorted(price for price in sell_price_depth.keys() if price <= order.price)
+        for price in price_matched:
+            volume = min(order.quantity, abs(sell_price_depth[price]))
+            self.__deduct_volume_from_order(sell_price_depth, price, volume)
+            trade = self.__create_buy_order(order, volume, price, "")
+            trades.append(trade)
+            if order.quantity == 0:
+                return trades
+        return trades
+
+
+    def __match_sell_order_from_price_depth(self, order: Order) -> list[Trade]:
+        trades = []
+        buy_price_depth = self.state.order_depths[order.symbol].buy_orders
+        price_matches = sorted((price for price in buy_price_depth.keys() if price >= order.price), reverse=True)
+        for price in price_matches:
+            volume = min(abs(order.quantity), buy_price_depth[price])
+            self.__deduct_volume_from_order(buy_price_depth, price, volume)
+            trade = self.__create_sell_order(order, volume, price, "")
+            trades.append(trade)
+            if order.quantity == 0:
+                return trades
+        return trades
+
+    def __match_buy_order_from_market_trades(self, order, market_trades) -> list[Trade]:
+        trades = []
+        if self.trade_matching_mode != TradeMatchingMode.none:
+            # try match from market_trades
+            matched_market_trades = [trade for trade in market_trades if self.__can_match_buy_order(order, trade)]
+            for market_trade in matched_market_trades:
+                volume = min(order.quantity, market_trade.sell_quantity)
+                market_trade.sell_quantity -= volume
+                # market_trade.sell_quantity = 0
+                trade = self.__create_buy_order(order, volume, order.price, market_trade.trade.seller)
+                trades.append(trade)
+                if order.quantity == 0:
+                    return trades
+
+        return trades
+
+    def __match_sell_order_from_market_trades(self, order, market_trades) -> list[Trade]:
+        trades = []
+        if self.trade_matching_mode != TradeMatchingMode.none:
+            matched_market_trades = [trade for trade in market_trades if self.__can_match_sell_order(order, trade)]
+            for market_trade in matched_market_trades:
+                volume = min(abs(order.quantity), market_trade.buy_quantity)
+                market_trade.buy_quantity -= volume
+                # market_trade.buy_quantity = 0
+                trade = self.__create_sell_order(order, volume, order.price, market_trade.trade.buyer)
+                trades.append(trade)
+                if order.quantity == 0:
+                    return trades
+
+        return trades
