@@ -1,0 +1,12 @@
+{
+  "round1": {
+    "round": 1,
+    "description": "Round 1 official data",
+    "registered": "2026-01-01 00:00:00"
+  },
+  "normal": {
+    "round": 2,
+    "description": "Baseline, no shock",
+    "registered": "2026-01-01 00:00:00"
+  }
+}

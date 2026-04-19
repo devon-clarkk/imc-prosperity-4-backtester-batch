@@ -213,3 +213,7 @@ __marimo__/
 #draw.io
 .$backtester.drawio.bkp
 .$backtester.drawio.dtmp
+
+# btw — batch wrapper
+backtests/
+btw_registry.json

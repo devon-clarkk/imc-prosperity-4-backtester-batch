@@ -1,0 +1,10 @@
+{
+  "name": "My Algorithm Comparison",
+  "algorithms": [
+    {"path": "../algos/MyTrader.py",   "alias": "MyTrader"},
+    {"path": "../algos/Baseline.py",   "alias": "Baseline"}
+  ],
+  "datasets": ["round1", "round2"],
+  "day": null,
+  "output": "../results/my_comparison.md"
+}

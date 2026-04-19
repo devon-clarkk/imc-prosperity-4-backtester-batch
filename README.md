@@ -1,106 +1,203 @@
-# IMC Prosperity 4 Backtester
+# IMC Prosperity 4 Backtester — with Batch Wrapper (`btw`)
 
-This repository contains a Python-based backtester designed in preparation for the [IMC Prosperity 4 challenge](https://prosperity.imc.com/). 
+This is a fork of [kevin-fu1/imc-prosperity-4-backtester](https://github.com/kevin-fu1/imc-prosperity-4-backtester) with one addition: **`btw.py`**, a batch backtesting wrapper that lets you test multiple algorithms across multiple datasets in a single command.
+
+Everything in the original backtester works exactly as before. `btw.py` is purely additive — drop it into any clone of the original repo and it just works.
+
+---
+
+## `btw.py` — Batch Backtesting Wrapper
+
+Instead of running one algorithm against one dataset at a time, define a JSON config and run an entire test suite at once. You get a live console summary and an auto-generated Markdown report.
+
+> Requires Python 3.10+
+
+---
+
+### Step 1 — Add your data
+
+The backtester loads price and trade CSVs from numbered folders inside `prosperity4bt/resources/`. Each dataset gets its own folder:
+
+```
+prosperity4bt/resources/
+  round6/
+    prices_round_6_day_-2.csv
+    prices_round_6_day_-1.csv
+    prices_round_6_day_0.csv
+    trades_round_6_day_-2.csv
+    trades_round_6_day_-1.csv
+    trades_round_6_day_0.csv
+```
+
+Files must follow the naming convention `prices_round_<N>_day_<D>.csv` / `trades_round_<N>_day_<D>.csv`, where `<N>` matches the folder number and `<D>` is the day (`-2`, `-1`, `0`, etc.).
+
+> **Important:** IMC Prosperity 4 has 5 official rounds (rounds 0–5). **Always use round numbers 6 and above for custom or synthetic datasets** to avoid collisions with official data.
+
+You also need to tell the backtester which days exist for your round. Add a branch to the `get_days` method in `prosperity4bt/tools/data_reader.py`:
+
+```python
+if round == 6:
+    return [-2, -1, 0]
+```
+
+---
+
+### Step 2 — Register your datasets
+
+`btw` maps friendly alias names to round numbers so your configs stay readable. The registry is stored locally in `btw_registry.json` (gitignored — each user maintains their own).
+
+```bash
+python btw.py register round1        1 --desc "Round 1 official data"
+python btw.py register gradual_shock 6 --desc "Gradual -700 shock scenario"
+```
+
+Check what's registered:
+```bash
+python btw.py list
+```
+
+See `btw_registry.example.json` for the registry file format.
+
+---
+
+### Step 3 — Create a config file
+
+Define which algorithms to test and which datasets to run them against. See `btw_config.example.json` for a ready-to-copy template.
+
+```json
+{
+  "name": "My Algorithm Comparison",
+  "algorithms": [
+    {"path": "../algos/MyTrader.py",  "alias": "MyTrader"},
+    {"path": "../algos/Baseline.py",  "alias": "Baseline"}
+  ],
+  "datasets": ["round1", "gradual_shock"],
+  "day": null,
+  "output": "../results/my_comparison.md"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | yes | Suite name — used in report headers and output folder names |
+| `algorithms` | list | yes | Each entry: `{"path": "...", "alias": "..."}` |
+| `datasets` | list | yes | Registered alias names — first entry is the baseline for delta comparisons |
+| `day` | string \| null | no | `null` runs all days; `"0"` or `"-2"` filters to one day |
+| `output` | string | no | Extra path to copy the Markdown report to |
+
+---
+
+### Step 4 — Run
+
+```bash
+python btw.py run my_config.json
+```
+
+### What you get
+
+- Live per-run output in the console as each backtest completes
+- A **summary table** showing total profit for every algorithm × dataset combination, with deltas vs the baseline
+- A **`results.md` Markdown report** saved automatically into a timestamped folder under `backtests/`
+
+---
+
+### Full CLI reference
+
+```
+python btw.py register <alias> <round> [--desc "..."]   Register a dataset alias
+python btw.py unregister <alias>                         Remove an alias
+python btw.py list                                       Show all registered aliases
+python btw.py run <config.json> [--save <file>]          Run a batch test suite
+```
+
+---
+---
+
+## Original Backtester — Documentation
+
+> The following is the original documentation from [kevin-fu1/imc-prosperity-4-backtester](https://github.com/kevin-fu1/imc-prosperity-4-backtester), preserved here for reference.
+
+This repository contains a Python-based backtester designed in preparation for the [IMC Prosperity 4 challenge](https://prosperity.imc.com/).
 
 **Key Notes:**
-* **Origin:** This project is heavily based on [jmerle/imc-prosperity-3-backtester](https://github.com/jmerle/imc-prosperity-3-backtester), but it has been rewritten to utilize a more Object-Oriented Programming (OOP) style. 
+* **Origin:** This project is heavily based on [jmerle/imc-prosperity-3-backtester](https://github.com/jmerle/imc-prosperity-3-backtester), but it has been rewritten to utilize a more Object-Oriented Programming (OOP) style.
 * **Current Status:** The codebase is up to date with the Prosperity 4 tutorial round.
 * **License:** MIT License.
 
 ---
 
-**Usage:**
+### Basic usage
 
-**Basic usage:**
-
-Run the backtester on an algorithm using all data from round 0
+Run the backtester on an algorithm using all data from round 0:
 ```bash
- $ python -m prosperity4bt <path to algorithm file> 0
- ```
-
-Run the backtester on an algorithm using all data from round 0, day '-2'
-```bash
- $ python -m prosperity4bt <path to algorithm file> 0--2
- ```
-
-If you see: `No module named 'datamodel'`, set PYTHONPATH to the folder containing datamodel.py:  
-```bash
- $env:PYTHONPATH="<path to>\imc-prosperity-4-backtester\prosperity4bt"
+python -m prosperity4bt <path to algorithm file> 0
 ```
 
-**Run/Debug from Pycham**
+Run the backtester on an algorithm using all data from round 0, day `-2`:
+```bash
+python -m prosperity4bt <path to algorithm file> 0--2
+```
 
-Add Run/Debug Configuration:
+If you see `No module named 'datamodel'`, set PYTHONPATH to the folder containing `datamodel.py`:
+```bash
+$env:PYTHONPATH="<path to>\imc-prosperity-4-backtester\prosperity4bt"
+```
 
-![Pycham Config](images/pycharm.png)
+**Run/Debug from PyCharm** — Add Run/Debug Configuration:
+
+![PyCharm Config](images/pycharm.png)
+
 ---
-## Overall Structure & How It Works
 
-The architecture of the program is modularized to cleanly separate data loading, simulation execution, and order matching. Below is the structural diagram of the backtester:
+### Overall Structure & How It Works
+
+The architecture is modularized to cleanly separate data loading, simulation execution, and order matching:
 
 ![Backtester Architecture](images/backtester.png)
 
-### Component Breakdown & Execution Flow
-
-Based on the architecture diagram, the system operates through the following primary components and execution steps:
-
 #### 1. The `BackTester` (Main Controller)
-This is the top-level driver of the simulation:
-* **Initialization:** It begins by executing the `Load Algorithm Module` step to ingest your trading logic.
-* **Iteration:** It initializes an empty `results = []` list and iterates through a nested loop: `for each round` and `for each day`. For every day, it executes the `Run Test` function, which calls the `TestRunner`. It then appends the output to the `results` list.
-* **Completion:** Once all rounds and days are processed, it calls `Merge Results` to combine the data and triggers `Write Output File` to produce a consolidated log (e.g., `2026-03-01_08-35-51.log` containing trading results).
+* Loads the algorithm module, iterates through rounds and days, calls `TestRunner` for each day, merges results, and writes the output log.
 
 #### 2. The `TestRunner` (Daily Simulator)
-The `TestRunner` is responsible for simulating the market environment for a single day:
-* **Read Data:** It triggers `Read Data` which calls the `BackDataReader` to read the market data from 2 csv files (price and trade). The reader parses the files (e.g.`prices_round_1_day_0.csv` and `trades_round_1_day_0.csv`) and returns a `BacktestData` object. This step yields `Result - Stage 0`.
-* **Timestamp Loop:** For each timestamp in the loaded data (`for each timestamp`), the runner executes a sequence of events:
-    1. **Initialize TradeState:** Prepares the current state of the market.
-    2. **Trade:** Creates a `TradingState` object and passes it into the user's `Algorithm`. 
-    3. **Algorithm Execution:** The user's `Algorithm` processes the state and returns proposed orders and a string as `TraderData`. Any standard output (`stdout`) generated by the algorithm is captured as `lambda_log`. This execution step yields `Result - Stage 1`.
-    4. **Create Activity Logs:** The `ActivityLogCreator` steps in to record the actions, orders, and market state of the current timestamp. This yields `Result - Stage 2`.
-    5. **Match Orders:** The proposed orders are passed to the `OrderMatchMaker`, which simulates the exchange mechanics to fill orders against the historical order book. This yields `Result - Stage 3`.
-* **Results Aggregation:** After the timestamp loop concludes, the overall day's simulation yields `Result - Stage 4`, which is returned back to the `BackTester`.
+For each timestamp in the day:
+1. Initializes `TradingState` and passes it to the algorithm
+2. Captures orders and `TraderData` returned by the algorithm
+3. Logs activity via `ActivityLogCreator`
+4. Matches orders against the historical order book via `OrderMatchMaker`
 
 #### 3. Core Helper Modules
-* **`BackDataReader`:** Handles the file ingestion of CSV price and trade data into programmatic objects.
-* **`ActivityLogCreator`:** Responsible for standardizing and formatting the activity logs for later analysis and debugging.
-* **`OrderMatchMaker`:** The internal simulation engine that determines which algorithm orders execute and updating positions.
-## Explanation of Data Models
+* **`BackDataReader`** — Ingests price and trade CSVs into `BacktestData` objects
+* **`ActivityLogCreator`** — Formats activity logs for analysis and debugging
+* **`OrderMatchMaker`** — Simulates exchange order matching and position updates
 
-The backtester relies on a specific set of data models to process market information and log simulation results cleanly. 
+---
 
-* **`datamodel.py`**: This file contains the core data models that are shared between the `BackTester` and your custom `Algorithm`. **(Please do not change this file)**. Modifying it may break compatibility with the official Prosperity environment.
-* **`models/` directory**: The models located within the `models` folder are specifically defined for the internal operations of the `BackTester`.
-* **Input Data Models (`models/input.py`)**: This file defines the models that capture the raw market data from the input files. During the setup phase, data is extracted from the price data files and trade data files:
+### Data Models
 
-  **Price Data:**
-  
-  ![Price Data](images/price_data.png)
+* **`datamodel.py`** — Shared between the backtester and your algorithm. **Do not modify** — changes may break compatibility with the official Prosperity environment.
+* **`models/input.py`** — Defines how raw CSV data is parsed into `BacktestData`
+* **`models/output.py`** — Defines `BacktestResult` and the output log format
 
-  **Trade Data:**
-  
-  ![Trade Data](images/trade_data.png)
+**Price Data:**
 
-  This raw data is then structured and filled into the `BacktestData` model, which acts as the data source for the simulation:
+![Price Data](images/price_data.png)
 
-  **Backtest Data:**
-  
-  ![Backtest Data](images/back_test_data.png)
+**Trade Data:**
 
-* **Result Data Models (`models/output.py`)**: Models defined here are responsible for capturing the test result data generated during the simulation. 
-  
-  Once the backtest is complete, the system compiles the findings into a `BacktestResult` object:
+![Trade Data](images/trade_data.png)
 
-  **Backtest Result:**
-  
-  ![Backtest Result](images/result_final_stage.png)
+**Backtest Data:**
 
-  Finally, this structured result data is written directly into the standard output log file so you can review your algorithm's performance and activities:
+![Backtest Data](images/back_test_data.png)
 
-  **Output Log File:**
-  
-  ![Output Log File](images/out_put_log_file.png)
+**Backtest Result:**
 
-    **lambda_log**
-   It contains the standard output generated by the algorithm. If you use the Logger class specified in my [Visualizer](https://github.com/kevin-fu1/imc-prosperity-4-visualizer), the data captured will be something like this:
-  ![Output Log File](images/lambda_log_data.png)
+![Backtest Result](images/result_final_stage.png)
+
+**Output Log File:**
+
+![Output Log File](images/out_put_log_file.png)
+
+If you use the Logger class from the [Visualizer](https://github.com/kevin-fu1/imc-prosperity-4-visualizer), the `lambda_log` will look like this:
+
+![Lambda Log](images/lambda_log_data.png)
